@@ -204,6 +204,9 @@ module.exports = exports["default"];
 Object.defineProperty(exports, "__esModule", {
 			value: true
 });
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+
 var generateParticlesData = function generateParticlesData(imgMap, resolution, cw, ch, scaleMul) {
 			var particlesData = Array.from(Array(Math.floor(imgMap.pixelAmount / resolution))).reduce(function (newArray, item, i) {
 						var ii = i * resolution;
@@ -232,7 +235,17 @@ var generateParticlesData = function generateParticlesData(imgMap, resolution, c
 			return particlesData;
 };
 
+// arrange particles with given data from image
+var arrangeParticles = function arrangeParticles(particles, particleData, cw, ch) {
+			particles.forEach(function (particle, i) {
+						// if there's more particles than images, give the particles random coordinates
+						var particleD = typeof particleData[i] !== "undefined" ? particleData[i] : [Math.random() * cw, Math.random() * ch, 0];
+						particle.changeTarget.apply(particle, _toConsumableArray(particleD));
+			});
+};
+
 exports.generateParticlesData = generateParticlesData;
+exports.arrangeParticles = arrangeParticles;
 
 },{}],5:[function(require,module,exports){
 "use strict";
@@ -341,24 +354,17 @@ var init = function init(images) {
 		return (0, _appParticles.generateParticlesData)(imgMap, resolution, cw, ch, scaleMul);
 	});
 
+	// Initiate particles with first imgMap
 	var particles = Array.from(Array(particleN)).map(function (d, i) {
 		var particleD = typeof particlesData[0][i] !== "undefined" ? particlesData[0][i] : [0, 0, 0];
 		return _appParticle2['default'].apply(undefined, _toConsumableArray(particleD));
 	});
 
-	// arrange particles with given data from image
-	var arrangeParticles = function arrangeParticles(particleData) {
-		particles.forEach(function (particle, i) {
-			// if there's more particles than images, give the particles random coordinates
-			var particleD = typeof particleData[i] !== "undefined" ? particleData[i] : [Math.random() * cw, Math.random() * ch, 0];
-			particle.changeTarget.apply(particle, _toConsumableArray(particleD));
-		});
-	};
-
+	// Loop through different imgMaps
 	var arrangementNumber = 1;
 	(function timeArrangement() {
 		setTimeout(function () {
-			arrangeParticles(particlesData[arrangementNumber]);
+			(0, _appParticles.arrangeParticles)(particles, particlesData[arrangementNumber], cw, ch);
 			arrangementNumber = arrangementNumber + 1 > particlesData.length - 1 ? 0 : arrangementNumber + 1;
 			timeArrangement();
 		}, 3000);

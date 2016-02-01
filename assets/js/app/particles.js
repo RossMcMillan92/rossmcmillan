@@ -27,4 +27,13 @@ const generateParticlesData = (imgMap, resolution, cw, ch, scaleMul) => {
 	return particlesData;
 }
 
-export { generateParticlesData }
+// arrange particles with given data from image
+const arrangeParticles = (particles, particleData, cw, ch) => {
+    particles.forEach((particle, i) => {
+    	// if there's more particles than images, give the particles random coordinates
+    	const particleD = typeof particleData[i] !== "undefined" ? particleData[i] : [Math.random() * cw, Math.random() * ch, 0];
+    	particle.changeTarget(...particleD)
+    });
+}
+
+export { generateParticlesData, arrangeParticles }

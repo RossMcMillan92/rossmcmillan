@@ -1,7 +1,7 @@
 import ImageMap 				 	from './app/image-map';
 import Particle 					from './app/particle';
 import Loop 						from './app/loop';
-import { generateParticlesData } 	from './app/particles'
+import { generateParticlesData, arrangeParticles } 	from './app/particles'
 import { throttle } 				from './app/tools';
 
 const init = (images) => {
@@ -26,29 +26,21 @@ const init = (images) => {
 	const imgMaps       = images.map(img => ImageMap(img, [cw, ch]));   
 	const particlesData = imgMaps.map(imgMap => generateParticlesData(imgMap, resolution, cw, ch, scaleMul));
 
+	// Initiate particles with first imgMap
 	let particles = Array.from(Array(particleN)).map((d, i) => {
     	const particleD = typeof particlesData[0][i] !== "undefined" ? particlesData[0][i] : [0,0,0];
 		return Particle(...particleD);
 	});
 
-	// arrange particles with given data from image
-	const arrangeParticles = particleData => {
-	    particles.forEach((particle, i) => {
-	    	// if there's more particles than images, give the particles random coordinates
-	    	const particleD = typeof particleData[i] !== "undefined" ? particleData[i] : [Math.random() * cw, Math.random() * ch, 0];
-	    	particle.changeTarget(...particleD)
-	    });
-	}
-
+	// Loop through different imgMaps
 	let arrangementNumber = 1;
 	(function timeArrangement() {
 		setTimeout(() => {
-			arrangeParticles(particlesData[arrangementNumber]);
+			arrangeParticles(particles, particlesData[arrangementNumber], cw, ch);
 			arrangementNumber = arrangementNumber + 1 > particlesData.length - 1 ? 0 : arrangementNumber + 1;
 		    timeArrangement();
 		}, 3000);
 	})();
-
 
 	// Make the particles drift on click
 	canvas.addEventListener('click', () => particles.forEach((particle, i) => particle.toggleDrifting()));

@@ -44,7 +44,7 @@ config = {
 	// Outputs build in given 'output' folder
 	----------------------- */
 	sass: {
-		isEnabled: true,
+		isEnabled: false,
 
 		masterFileName: 'master',
 		path: './assets/sass',
