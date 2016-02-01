@@ -9,4 +9,14 @@ const compose = (...args) => (x) => args.reduce((prev, cur) => cur.call(cur, pre
 
 const curry = (fn, ...args) => (...args2) => fn(...args, ...args2); 
 
-export { repeat, compose, curry }
+const throttle = (fn, delay) => {
+    let timeout;
+    return (...args) => {
+        timeout = timeout || setTimeout(() => {
+            fn.apply(null, args);
+            timeout = undefined;
+        }, delay);
+    };
+}
+
+export { repeat, compose, curry, throttle }

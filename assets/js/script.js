@@ -1,17 +1,19 @@
-import ImageMap from './app/image-map';
-import Particle from './app/particle';
-import Loop from './app/loop';
+import ImageMap 				 	from './app/image-map';
+import Particle 					from './app/particle';
+import Loop 						from './app/loop';
+import { generateParticlesData } 	from './app/particles'
+import { throttle } 				from './app/tools';
 
-const init = (img) => {
+const init = (images) => {
 	const canvas      = document.getElementById('canvas'); 
 	const ctx         = canvas.getContext("2d");                        
 	const resolution  = 2; // Resolution of samples. Smaller = more particles. Change this
 	const loop 		  = Loop();
 	let cw            = canvas.width = document.documentElement.clientWidth;
 	let ch            = canvas.height = document.documentElement.clientHeight;
+	const scaleMul	  = cw < 550 ? .03125 : .0625;
+	const particleN   = 850;
 	let MousePos      = {x: cw / 2, y: ch / 2};                        
-	let hasChanged 	  = false;
-	let oldPositions;
 
 	// Get mouse coords
 	window.addEventListener('mousemove', function(e){
@@ -21,15 +23,35 @@ const init = (img) => {
 	  }
 	});
     
-	const imgMap    = ImageMap(img, [cw, ch]);   
-	const particles = generateParticles(ctx, imgMap, resolution, cw, ch);
+	const imgMaps       = images.map(img => ImageMap(img, [cw, ch]));   
+	const particlesData = imgMaps.map(imgMap => generateParticlesData(imgMap, resolution, cw, ch, scaleMul));
 
-	canvas.addEventListener('click', function(){
-		// oldPositions = hasChanged ? oldPositions : particles.map(particle => [particle.getPos.x, particle.getPos.y]);
-	    // particles.forEach((particle, i) => particle.changeTarget(hasChanged ? oldPositions[i][0] : Math.random() * cw, hasChanged ? oldPositions[i][1] : Math.random() * ch), true);
-	    particles.forEach((particle, i) => particle.toggleDrifting());
-		hasChanged = !hasChanged;
+	let particles = Array.from(Array(particleN)).map((d, i) => {
+    	const particleD = typeof particlesData[0][i] !== "undefined" ? particlesData[0][i] : [0,0,0];
+		return Particle(...particleD);
 	});
+
+	// arrange particles with given data from image
+	const arrangeParticles = particleData => {
+	    particles.forEach((particle, i) => {
+	    	// if there's more particles than images, give the particles random coordinates
+	    	const particleD = typeof particleData[i] !== "undefined" ? particleData[i] : [Math.random() * cw, Math.random() * ch, 0];
+	    	particle.changeTarget(...particleD)
+	    });
+	}
+
+	let arrangementNumber = 1;
+	(function timeArrangement() {
+		setTimeout(() => {
+			arrangeParticles(particlesData[arrangementNumber]);
+			arrangementNumber = arrangementNumber + 1 > particlesData.length - 1 ? 0 : arrangementNumber + 1;
+		    timeArrangement();
+		}, 3000);
+	})();
+
+
+	// Make the particles drift on click
+	canvas.addEventListener('click', () => particles.forEach((particle, i) => particle.toggleDrifting()));
 
 	loop.start((t) => {
 	    ctx.clearRect(0,0,cw,ch);
@@ -41,45 +63,34 @@ const init = (img) => {
 	})
 }
 
-const generateParticles = (ctx, imgMap, resolution, cw, ch) => {
-	const particles = Array.from(Array(Math.floor(imgMap.pixelAmount / resolution)))
-		.reduce((newArray, item, i) => {
-			const ii            = i * resolution;
-			const maxBrightness = 255 * 3;
-			const colors        = [255,255,255];
-			let x               = ii%imgMap.width;
-			let y               = Math.floor(ii/imgMap.width);
-			let r               = ((maxBrightness - imgMap.getBrightnessData(x,y)) / maxBrightness) * .5;
-
-			if(!r || y % resolution != 0) return newArray;
-
-			// Scale radius
-			r *= (imgMap.width / resolution) / 16;  
-
-			// Scale image
-			x *= imgMap.scale;
-			y *= imgMap.scale;
-
-			// Center image
-			x += ((cw / 2) - ((imgMap.width * imgMap.scale) / 2));
-			y += ((ch / 2) - ((imgMap.height * imgMap.scale) / 2));
-
-			const particle = Particle(x,y,r,colors);
-			return newArray.concat([particle]);
-		}, []);
-
-	console.log(particles.length)
-
-	return particles;
-}
-
+/*
+ * Load all the images before starting init();
+ */
 {
-	const img = new Image()
-	const imgURL = '/rossmcmillan/resources/img/test.jpg';
-	 
-	img.src = imgURL;
+	const imgUrls = [ 
+		'assets/img/text--ross.jpg',
+		'assets/img/text--front-end-developer.jpg',
+		'assets/img/text--heart.jpg',
+	];
 
-	img.addEventListener('load', function(){
-	  init(img);
-	});
+	const loadImage = (imgUrl) => {
+		const img = new Image();
+		img.src = imgUrl;
+		img.addEventListener('load', function(){
+		  isFinished();
+		});
+
+		return img
+	}
+
+	const images = imgUrls.map(loadImage);
+	let count = 0;
+	const isFinished = () => {
+		count++;
+		if(count === imgUrls.length) {
+			init(images);
+			window.addEventListener('resize', throttle(() => init(images), 100));
+		}
+	}
+
 }

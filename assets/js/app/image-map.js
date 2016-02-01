@@ -25,7 +25,7 @@ const getBrightnessDataCalc = function(width, imgData, x, y){
 function ImageMap(img, constraints){
 	const imgData = getImgData(img);
 	const [cw, ch] = constraints;
-	const maxScale = 3;
+	const maxScale = 4;
 	const scale = Math.min(cw / img.width, ch / img.height, maxScale);
 	const getBrightnessData = curry(getBrightnessDataCalc, img.width, imgData);
 	const pixelAmount = imgData.data.length / 4;
